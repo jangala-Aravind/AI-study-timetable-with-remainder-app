@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Study Smarter, Not Harder{% endblock %}
+
+{% block content %}
+<div style="background: linear-gradient(135deg, #FFF7F2 0%, #FFFFFF 50%, #FFF0E6 100%); min-height: calc(100vh - 64px);">
+
+  <!-- Hero -->
+  <div class="container py-5">
+    <div class="row align-items-center" style="min-height: 70vh;">
+      <div class="col-lg-7">
+        <div class="mb-3">
+          <span style="background:var(--orange-pale); color:var(--orange-dark); font-size:0.85rem; font-weight:600; padding:0.4rem 1rem; border-radius:99px; border:1px solid var(--border);">
+            AI-Powered Study Planner
+          </span>
+        </div>
+        <h1 style="font-size:3.5rem; font-weight:700; line-height:1.15; color:var(--text);">
+          Study Smarter,<br>
+          <span style="color:var(--orange);">Not Harder</span>
+        </h1>
+        <p style="font-size:1.1rem; color:var(--text-muted); margin:1.5rem 0 2rem; max-width:520px; line-height:1.7;">
+          FocusForge uses AI to build your perfect study schedule — prioritized by difficulty, urgency, and exam dates. Never miss a subject again.
+        </p>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding:0.75rem 2rem; font-size:1rem;">
+            Get Started Free &rarr;
+          </a>
+          <a href="{{ url_for('login') }}" class="btn btn-outline-primary" style="padding:0.75rem 2rem; font-size:1rem;">
+            Sign In
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5 mt-5 mt-lg-0">
+        <!-- Preview card -->
+        <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:20px; padding:1.5rem; box-shadow:var(--shadow-lg); max-width:360px; margin:auto;">
+          <div style="font-weight:700; color:var(--text); margin-bottom:1rem; font-size:0.95rem;">Today's Study Plan</div>
+          {% for item in [
+            ('Mathematics', '09:00 - 11:00', 'Hard'),
+            ('Physics', '11:30 - 12:30', 'Medium'),
+            ('English', '17:00 - 18:00', 'Weak')
+          ] %}
+          <div style="display:flex; align-items:center; gap:0.75rem; padding:0.65rem 0.75rem; border-radius:8px; border:1.5px solid var(--border-light); margin-bottom:0.5rem; background:{% if loop.first %}var(--orange-pale){% else %}var(--white){% endif %};">
+            <span style="font-family:var(--font-mono); font-size:0.72rem; color:var(--orange); background:var(--orange-pale); padding:0.2rem 0.5rem; border-radius:5px; white-space:nowrap;">{{ item[1] }}</span>
+            <span style="font-weight:600; font-size:0.9rem; flex:1;">{{ item[0] }}</span>
+            <span class="badge-{{ item[2]|lower }}">{{ item[2] }}</span>
+          </div>
+          {% endfor %}
+          <div style="margin-top:1rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:600; margin-bottom:0.4rem;">
+              <span>Today's Progress</span><span style="color:var(--orange);">33%</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="width:33%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="container pb-5">
+    <div class="text-center mb-5">
+      <h2 style="font-weight:700; font-size:2rem;">Why FocusForge?</h2>
+      <p style="color:var(--text-muted); max-width:500px; margin:0.75rem auto 0;">Everything you need to ace your exams, built into one smart planner.</p>
+    </div>
+    <div class="row g-4">
+
+      <div class="col-md-4">
+        <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:2rem; height:100%; box-shadow:var(--shadow-sm); transition:box-shadow 0.2s, transform 0.2s;"
+             onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-3px)'"
+             onmouseout="this.style.boxShadow='var(--shadow-sm)';this.style.transform='none'">
+          <div style="width:44px; height:44px; background:var(--orange-pale); border-radius:10px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+          </div>
+          <h5 style="font-weight:700; margin-bottom:0.5rem;">AI Prioritization</h5>
+          <p style="color:var(--text-muted); font-size:0.9rem; margin:0; line-height:1.6;">Our algorithm ranks subjects by difficulty, credit hours, and how close your exam is — so you always study what matters most.</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:2rem; height:100%; box-shadow:var(--shadow-sm); transition:box-shadow 0.2s, transform 0.2s;"
+             onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-3px)'"
+             onmouseout="this.style.boxShadow='var(--shadow-sm)';this.style.transform='none'">
+          <div style="width:44px; height:44px; background:var(--orange-pale); border-radius:10px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </div>
+          <h5 style="font-weight:700; margin-bottom:0.5rem;">Dynamic Adaptation</h5>
+          <p style="color:var(--text-muted); font-size:0.9rem; margin:0; line-height:1.6;">Missed a session? No worries. The AI automatically reschedules and rebalances your plan every single day.</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:2rem; height:100%; box-shadow:var(--shadow-sm); transition:box-shadow 0.2s, transform 0.2s;"
+             onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-3px)'"
+             onmouseout="this.style.boxShadow='var(--shadow-sm)';this.style.transform='none'">
+          <div style="width:44px; height:44px; background:var(--orange-pale); border-radius:10px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <h5 style="font-weight:700; margin-bottom:0.5rem;">Progress Tracking</h5>
+          <p style="color:var(--text-muted); font-size:0.9rem; margin:0; line-height:1.6;">Visual charts show your completion rate per subject so you can see exactly where you're excelling and where to improve.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="background:linear-gradient(135deg, var(--orange), var(--orange-dark)); padding:4rem 0; text-align:center; color:var(--white);">
+    <h2 style="font-weight:700; font-size:2rem; color:var(--white); margin-bottom:0.75rem;">Ready to ace your exams?</h2>
+    <p style="opacity:0.9; margin-bottom:2rem; font-size:1rem;">Join thousands of students who study smarter with FocusForge.</p>
+    <a href="{{ url_for('register') }}" style="background:var(--white); color:var(--orange); font-weight:700; padding:0.85rem 2.5rem; border-radius:var(--radius-sm); text-decoration:none; font-size:1rem; box-shadow:0 4px 16px rgba(0,0,0,0.15); display:inline-block;"
+       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      Start for Free &rarr;
+    </a>
+  </div>
+
+</div>
+{% endblock %}

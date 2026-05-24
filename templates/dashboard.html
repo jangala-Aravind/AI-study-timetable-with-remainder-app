@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:1200px;">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h2 style="font-weight:700; font-size:1.6rem; margin:0;">
+        Welcome back, <span style="color:var(--orange);">{{ current_user.username }}</span>
+      </h2>
+      <p style="color:var(--text-muted); font-size:0.875rem; margin:0.2rem 0 0;">
+        {{ today.strftime('%A, %d %B %Y') }}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm">Add Subject</a>
+      <form method="POST" action="{{ url_for('regenerate_plan') }}" style="margin:0;">
+        <button type="submit" class="btn btn-outline-primary btn-sm">Regenerate Plan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIX 1: Stats Row — NO icons, clean numbers only -->
+  <div class="row g-3 mb-4">
+    {% for label, val, sid in [
+      ('Total Today',  total_today,               'stat-total'),
+      ('Completed',    completed_today,            'stat-completed'),
+      ('Pending',      pending_today,              'stat-pending'),
+      ('Progress',     progress_pct|string + '%',  'stat-pct')
+    ] %}
+    <div class="col-6 col-md-3">
+      <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:1.5rem 1rem; text-align:center; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--orange), var(--orange-light));"></div>
+        <div id="{{ sid }}" style="font-size:2.2rem; font-weight:700; color:var(--orange); line-height:1.1;">{{ val }}</div>
+        <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.07em; margin-top:0.4rem;">{{ label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Progress Bar -->
+  <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:1.25rem; margin-bottom:1.5rem; box-shadow:var(--shadow-sm);">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span style="font-weight:600; font-size:0.9rem;">Today's Progress</span>
+      <span id="progress-label" style="font-weight:700; color:var(--orange); font-size:0.9rem;">{{ progress_pct }}%</span>
+    </div>
+    <div class="progress" style="height:12px;">
+      <div class="progress-bar" id="progress-bar"
+           style="width:{{ progress_pct }}%"
+           aria-valuenow="{{ progress_pct }}"
+           aria-valuemin="0" aria-valuemax="100">
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- FIX 2: Today's Sessions — consistent row height & spacing -->
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Today's Sessions</span>
+          <span style="font-size:0.78rem; opacity:0.85;">{{ today.strftime('%d %b') }}</span>
+        </div>
+        <div class="card-body" style="padding:1.25rem;">
+          <div id="session-list">
+            {% if sessions %}
+              {% for s in sessions %}
+              <div style="
+                display:grid;
+                grid-template-columns: 110px 1fr auto auto;
+                align-items:center;
+                gap:1rem;
+                padding:0.9rem 1rem;
+                border-radius:8px;
+                border:1.5px solid {% if s.completed %}#B7EFC5{% else %}var(--border-light){% endif %};
+                background:{% if s.completed %}var(--success-bg){% else %}var(--white){% endif %};
+                margin-bottom:0.65rem;
+              ">
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--orange); background:var(--orange-pale); padding:0.25rem 0.5rem; border-radius:5px; text-align:center; white-space:nowrap;">
+                  {{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}
+                </span>
+                <span style="font-weight:600; font-size:0.9rem; {% if s.completed %}text-decoration:line-through; color:var(--text-muted);{% endif %}">
+                  {{ subject_map[s.subject_id].name }}
+                </span>
+                <span class="badge-{{ subject_map[s.subject_id].difficulty|lower }}" style="white-space:nowrap;">
+                  {{ subject_map[s.subject_id].difficulty }}
+                </span>
+                {% if not s.completed %}
+                <form method="POST" action="{{ url_for('complete_session', session_id=s.id) }}" style="margin:0;">
+                  <button type="submit" class="btn btn-success btn-sm complete-btn" data-id="{{ s.id }}" style="font-size:0.78rem; padding:0.25rem 0.75rem; white-space:nowrap;">Done</button>
+                </form>
+                {% else %}
+                <span style="font-size:0.78rem; background:var(--success-bg); color:var(--success); padding:0.25rem 0.65rem; border-radius:6px; font-weight:600; white-space:nowrap;">Done</span>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center py-4" style="color:var(--text-muted);">
+                <p style="margin:0; font-weight:600;">No sessions scheduled today.</p>
+                <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm mt-2">Add a Subject</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Priority Queue -->
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header">Priority Queue</div>
+        <div class="card-body" style="padding:1rem;">
+          <div id="priority-queue">
+            {% if priority_subjects %}
+              {% for sub in priority_subjects[:8] %}
+              <div style="display:flex; align-items:center; gap:0.75rem; padding:0.7rem 0.85rem; border-radius:8px; border-left:4px solid {% if loop.index == 1 %}var(--orange){% elif loop.index == 2 %}var(--orange-light){% else %}#FFB380{% endif %}; background:var(--orange-pale); margin-bottom:0.5rem;">
+                <div style="flex:1;">
+                  <div style="font-weight:600; font-size:0.875rem;">{{ sub.name }}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted);">Exam: {{ sub.exam_date.strftime('%d %b %Y') }}</div>
+                </div>
+                <span class="badge-{{ sub.difficulty|lower }}">{{ sub.difficulty }}</span>
+                <span style="font-family:var(--font-mono); font-size:0.72rem; background:var(--orange); color:var(--white); padding:0.15rem 0.45rem; border-radius:5px;">{{ '%.3f'|format(sub.priority_score) }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p style="color:var(--text-muted); text-align:center; padding:2rem 0; font-size:0.9rem;">No subjects added yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Weekly Timetable -->
+  <div class="card mt-4">
+    <div class="card-header">7-Day Study Plan</div>
+    <div class="card-body" style="padding:1rem;">
+      <div id="weekly-plan">
+        <div class="text-center py-3" style="color:var(--text-muted);">
+          <span class="spinner"></span> Loading weekly plan...
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% endblock %}

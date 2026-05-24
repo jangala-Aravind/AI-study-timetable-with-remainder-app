@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+{% block title %}Reminder Settings{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:680px;">
+
+  <!-- Header -->
+  <div class="mb-4">
+    <a href="{{ url_for('dashboard') }}" style="color:var(--text-muted); font-size:0.875rem; text-decoration:none;">← Back to Dashboard</a>
+    <h2 style="font-weight:700; margin:0.5rem 0 0.25rem;">Reminder Settings</h2>
+    <p style="color:var(--text-muted); font-size:0.875rem; margin:0;">Manage your reminder notes and notification preferences.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       NOTEPAD SECTION — top of page
+  ═══════════════════════════════════════════════════════ -->
+  <div class="mb-3" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <h4 style="font-weight:700; margin:0;">Reminder Notepad</h4>
+      <p style="color:var(--text-muted); font-size:0.825rem; margin:0.2rem 0 0;">
+        Write notes to explain the purpose of each reminder you set.
+      </p>
+    </div>
+    <button onclick="openModal()" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+      + Add Note
+    </button>
+  </div>
+
+  <!-- Notes table -->
+  <div class="card mb-5">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Your Notes</span>
+      <span style="font-size:0.78rem; opacity:0.85;" id="note-count">
+        {{ notes|length }} note{% if notes|length != 1 %}s{% endif %}
+      </span>
+    </div>
+    <div class="card-body" style="padding:0;">
+
+      <!-- Table header -->
+      <div style="
+        display:grid;
+        grid-template-columns: 1fr 2fr 1fr auto;
+        gap:1rem;
+        padding:0.65rem 1.25rem;
+        background:var(--orange-pale);
+        border-bottom:1.5px solid var(--border-light);
+        font-size:0.75rem;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:0.06em;
+        color:var(--text-muted);
+      ">
+        <span>Heading</span>
+        <span>Body</span>
+        <span>Notify On</span>
+        <span>Actions</span>
+      </div>
+
+      <!-- Notes list -->
+      <div id="notes-list">
+        {% if notes %}
+          {% for note in notes %}
+          <div class="note-row" data-id="{{ note.id }}" style="
+            display:grid;
+            grid-template-columns: 1fr 2fr 1fr auto;
+            gap:1rem;
+            align-items:start;
+            padding:1rem 1.25rem;
+            border-bottom:1px solid var(--border-light);
+            transition:background 0.15s;
+          " onmouseover="this.style.background='var(--orange-pale)'" onmouseout="this.style.background='transparent'">
+
+            <div>
+              <span style="font-weight:600; font-size:0.875rem; color:var(--text);">{{ note.heading }}</span>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.25rem;">
+                {{ note.created_at.strftime('%d %b %Y') }}
+              </div>
+            </div>
+
+            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; word-break:break-word;">
+              {{ note.body }}
+            </div>
+
+            <div style="font-size:0.8rem;">
+              {% if note.remind_at %}
+                <span style="
+                  display:inline-flex; align-items:center; gap:0.3rem;
+                  background:var(--orange-pale); border:1px solid var(--border);
+                  color:var(--orange-dark); border-radius:6px;
+                  padding:0.2rem 0.55rem; font-size:0.75rem; font-weight:600;">
+                  🔔 {{ note.remind_at.strftime('%d %b %Y, %H:%M') }}
+                </span>
+                {% if note.notified %}
+                  <div style="font-size:0.7rem; color:#16a34a; margin-top:0.3rem;">✅ Sent</div>
+                {% endif %}
+              {% else %}
+                <span style="color:var(--text-muted); font-size:0.78rem;">—</span>
+              {% endif %}
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.4rem; align-items:flex-end;">
+              <button onclick="editNote({{ note.id }}, {{ note.heading|tojson }}, {{ note.body|tojson }}, {{ (note.remind_at.strftime('%Y-%m-%dT%H:%M') if note.remind_at else '')|tojson }})"
+                      style="background:var(--orange-pale); border:1px solid var(--border); color:var(--orange-dark); border-radius:6px; padding:0.2rem 0.65rem; font-size:0.75rem; font-weight:600; cursor:pointer; white-space:nowrap;">
+                Edit
+              </button>
+              <button onclick="deleteNote({{ note.id }}, this)"
+                      style="background:var(--danger-bg); border:1px solid #fca5a5; color:var(--danger); border-radius:6px; padding:0.2rem 0.65rem; font-size:0.75rem; font-weight:600; cursor:pointer; white-space:nowrap;">
+                Delete
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div id="empty-state" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">📝</div>
+            <p style="font-weight:600; margin:0; font-size:0.9rem;">No notes yet.</p>
+            <p style="font-size:0.8rem; margin:0.25rem 0 0;">Add a note to describe the purpose of each reminder.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       REMINDER PREFERENCES FORM
+  ═══════════════════════════════════════════════════════ -->
+  <div class="mb-3">
+    <h4 style="font-weight:700; margin:0;">Notification Preferences</h4>
+    <p style="color:var(--text-muted); font-size:0.825rem; margin:0.2rem 0 0;">
+      Choose how and when you'd like to be notified about sessions and exams.
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('reminder_settings') }}">
+
+    <!-- Notification Channel -->
+    <div class="card mb-3">
+      <div class="card-header">Notification Channel</div>
+      <div class="card-body" style="padding:1.25rem;">
+        <div class="form-check" style="display:flex; align-items:flex-start; gap:0.75rem;">
+          <input class="form-check-input" type="checkbox" name="email_enabled" id="email_enabled"
+                 style="width:1.1rem; height:1.1rem; margin-top:0.2rem; accent-color:var(--orange);"
+                 {% if pref.email_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="email_enabled">
+            <span style="font-weight:600; font-size:0.9rem;">Email reminders</span><br>
+            <span style="color:var(--text-muted); font-size:0.8rem;">
+              Notifications will be sent to <strong>{{ current_user.email }}</strong>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Reminders -->
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Session Reminders</span>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 name="session_reminders_enabled" id="session_toggle"
+                 style="width:2.5rem; height:1.25rem; accent-color:var(--orange); cursor:pointer;"
+                 {% if pref.session_reminders_enabled %}checked{% endif %}>
+        </div>
+      </div>
+      <div class="card-body" style="padding:1.25rem;" id="session_options">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+          Get notified before each study session starts.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">How many minutes before the session?</label>
+          <select name="session_lead_minutes" class="form-select">
+            {% for mins in [10, 15, 20, 30, 45, 60] %}
+              <option value="{{ mins }}" {% if pref.session_lead_minutes == mins %}selected{% endif %}>
+                {{ mins }} minutes before
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" onclick="sendTest('session')"
+                style="background:none; border:none; color:var(--orange); font-size:0.85rem; font-weight:600; padding:0; cursor:pointer; text-decoration:underline;">
+          Send test session reminder →
+        </button>
+      </div>
+    </div>
+
+    <!-- Daily Digest -->
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Daily Digest</span>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 name="daily_digest_enabled" id="digest_toggle"
+                 style="width:2.5rem; height:1.25rem; accent-color:var(--orange); cursor:pointer;"
+                 {% if pref.daily_digest_enabled %}checked{% endif %}>
+        </div>
+      </div>
+      <div class="card-body" style="padding:1.25rem;" id="digest_options">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+          A morning summary of today's planned sessions.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">Send digest at</label>
+          <select name="daily_digest_hour" class="form-select">
+            {% for h in range(24) %}
+              <option value="{{ h }}" {% if pref.daily_digest_hour == h %}selected{% endif %}>
+                {{ "%02d:00"|format(h) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" onclick="sendTest('digest')"
+                style="background:none; border:none; color:var(--orange); font-size:0.85rem; font-weight:600; padding:0; cursor:pointer; text-decoration:underline;">
+          Send test digest →
+        </button>
+      </div>
+    </div>
+
+    <!-- Exam Countdown -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Exam Countdown</span>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 name="exam_reminder_enabled" id="exam_toggle"
+                 style="width:2.5rem; height:1.25rem; accent-color:var(--orange); cursor:pointer;"
+                 {% if pref.exam_reminder_enabled %}checked{% endif %}>
+        </div>
+      </div>
+      <div class="card-body" style="padding:1.25rem;" id="exam_options">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+          Get alerted before an upcoming exam.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">Alert me this many days before the exam</label>
+          <select name="exam_reminder_days_before" class="form-select">
+            {% for d in [1, 2, 3, 5, 7] %}
+              <option value="{{ d }}" {% if pref.exam_reminder_days_before == d %}selected{% endif %}>
+                {{ d }} day{% if d != 1 %}s{% endif %} before
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" onclick="sendTest('exam')"
+                style="background:none; border:none; color:var(--orange); font-size:0.85rem; font-weight:600; padding:0; cursor:pointer; text-decoration:underline;">
+          Send test exam alert →
+        </button>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <button type="submit" class="btn btn-primary" style="padding:0.6rem 1.5rem;">
+        Save Preferences
+      </button>
+      <a href="{{ url_for('dashboard') }}" style="color:var(--text-muted); font-size:0.875rem; text-decoration:none;">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+
+</div><!-- /container -->
+
+
+<!-- ── Add / Edit Modal ──────────────────────────────────── -->
+<div id="note-modal" style="
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.45); z-index:1050;
+  align-items:center; justify-content:center;">
+
+  <div style="
+    background:var(--white); border-radius:var(--radius);
+    padding:1.75rem; width:100%; max-width:480px;
+    margin:1rem; box-shadow:var(--shadow-lg);
+    animation: fadeSlideIn 0.2s ease both;">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+      <h5 id="modal-title" style="font-weight:700; margin:0;">Add Note</h5>
+      <button onclick="closeModal()" style="background:none; border:none; font-size:1.3rem; line-height:1; cursor:pointer; color:var(--text-muted);">&times;</button>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Heading</label>
+      <input type="text" id="note-heading" class="form-control"
+             placeholder="e.g. Before maths exam, Daily morning check…" maxlength="200">
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">
+        Short title that tells you what this reminder is for.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Body</label>
+      <textarea id="note-body" class="form-control" rows="4"
+                placeholder="e.g. Review chapter 5 & 6, do past papers, check formula sheet…"
+                style="resize:vertical;"></textarea>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">
+        Detailed notes so you remember exactly what to do when this reminder fires.
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label">Notify me on <span style="color:var(--text-muted); font-weight:400;">(optional)</span></label>
+      <input type="datetime-local" id="note-remind-at" class="form-control">
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">
+        You'll receive an email at this date and time. Leave blank for no notification.
+      </div>
+    </div>
+
+    <div id="modal-error" style="display:none; color:var(--danger); font-size:0.82rem; margin-bottom:0.75rem; padding:0.5rem 0.75rem; background:var(--danger-bg); border-radius:6px;"></div>
+
+    <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+      <button onclick="closeModal()"
+              style="background:none; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:0.5rem 1.1rem; font-size:0.875rem; font-weight:600; cursor:pointer; color:var(--text-muted);">
+        Cancel
+      </button>
+      <button id="modal-save-btn" onclick="saveNote()"
+              class="btn btn-primary" style="padding:0.5rem 1.5rem;">
+        Save Note
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast -->
+<div id="toast" style="
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  background:var(--text); color:white;
+  padding:0.75rem 1.25rem; border-radius:var(--radius-sm);
+  font-size:0.85rem; font-weight:500;
+  box-shadow:var(--shadow-md);
+  opacity:0; transition:opacity 0.3s;
+  pointer-events:none; z-index:9999;">
+  <span id="toast_msg"></span>
+</div>
+
+
+<script>
+/* ── Toggle switches ── */
+function bindToggle(cbId, divId) {
+  const cb = document.getElementById(cbId);
+  const dv = document.getElementById(divId);
+  if (!cb || !dv) return;
+  const upd = () => dv.style.opacity = cb.checked ? '1' : '0.4';
+  upd();
+  cb.addEventListener('change', upd);
+}
+bindToggle('session_toggle', 'session_options');
+bindToggle('digest_toggle',  'digest_options');
+bindToggle('exam_toggle',    'exam_options');
+
+/* ── Test emails ── */
+async function sendTest(kind) {
+  try {
+    const res  = await fetch('/api/reminders/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind })
+    });
+    const data = await res.json();
+    showToast(data.message || 'Test sent!');
+  } catch (e) {
+    showToast('Could not send test: ' + e.message);
+  }
+}
+
+/* ── Modal state ── */
+let _editingId = null;
+
+function openModal(id, heading, body, remindAt) {
+  _editingId = id || null;
+  document.getElementById('modal-title').textContent    = id ? 'Edit Note' : 'Add Note';
+  document.getElementById('modal-save-btn').textContent = id ? 'Update Note' : 'Save Note';
+  document.getElementById('note-heading').value    = heading  || '';
+  document.getElementById('note-body').value       = body     || '';
+  document.getElementById('note-remind-at').value  = remindAt || '';
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('note-modal').style.display  = 'flex';
+  setTimeout(() => document.getElementById('note-heading').focus(), 50);
+}
+
+function editNote(id, heading, body, remindAt) { openModal(id, heading, body, remindAt); }
+
+function closeModal() {
+  document.getElementById('note-modal').style.display = 'none';
+  _editingId = null;
+}
+
+document.getElementById('note-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ── Save (add or update) ── */
+async function saveNote() {
+  const heading  = document.getElementById('note-heading').value.trim();
+  const body     = document.getElementById('note-body').value.trim();
+  const remindAt = document.getElementById('note-remind-at').value;  // "YYYY-MM-DDTHH:MM" or ""
+  const errEl    = document.getElementById('modal-error');
+
+  if (!heading || !body) {
+    errEl.textContent   = 'Both Heading and Body are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const isEdit = !!_editingId;
+  const url    = isEdit ? `/api/reminder_notes/${_editingId}` : '/api/reminder_notes';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  let res, data;
+  try {
+    res  = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ heading, body, remind_at: remindAt })
+    });
+    data = await res.json();
+  } catch (e) {
+    errEl.textContent   = 'Network error: ' + e.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (!res.ok || data.status !== 'ok') {
+    errEl.textContent   = data.message || `Server error (${res.status}).`;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  closeModal();
+
+  if (isEdit) {
+    const row = document.querySelector(`.note-row[data-id="${_editingId}"]`);
+    if (row) {
+      const cols = row.querySelectorAll(':scope > div');
+      cols[0].querySelector('span').textContent = heading;
+      cols[1].textContent = body;
+      // Update remind_at cell
+      cols[2].innerHTML = remindAt
+        ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--orange-pale);border:1px solid var(--border);color:var(--orange-dark);border-radius:6px;padding:0.2rem 0.55rem;font-size:0.75rem;font-weight:600;">🔔 ${formatRemindAt(remindAt)}</span>`
+        : `<span style="color:var(--text-muted);font-size:0.78rem;">—</span>`;
+      // Update edit button with new remindAt value
+      const editBtn = cols[3].querySelector('button:first-child');
+      editBtn.setAttribute('onclick', `editNote(${_editingId},${JSON.stringify(heading)},${JSON.stringify(body)},${JSON.stringify(remindAt)})`);
+    }
+    showToast('Note updated.');
+  } else {
+    removeEmptyState();
+    const note = data.note;
+    const list = document.getElementById('notes-list');
+    const div  = document.createElement('div');
+    div.className  = 'note-row';
+    div.dataset.id = note.id;
+    div.style.cssText = `
+      display:grid; grid-template-columns:1fr 2fr 1fr auto;
+      gap:1rem; align-items:start;
+      padding:1rem 1.25rem;
+      border-bottom:1px solid var(--border-light);
+      transition:background 0.15s;`;
+    div.onmouseover = () => div.style.background = 'var(--orange-pale)';
+    div.onmouseout  = () => div.style.background = 'transparent';
+
+    const remindCell = note.remind_at
+      ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--orange-pale);border:1px solid var(--border);color:var(--orange-dark);border-radius:6px;padding:0.2rem 0.55rem;font-size:0.75rem;font-weight:600;">🔔 ${escHtml(note.remind_at)}</span>`
+      : `<span style="color:var(--text-muted);font-size:0.78rem;">—</span>`;
+
+    div.innerHTML = `
+      <div>
+        <span style="font-weight:600;font-size:0.875rem;color:var(--text);">${escHtml(note.heading)}</span>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">${escHtml(note.created_at)}</div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.5;word-break:break-word;">${escHtml(note.body)}</div>
+      <div style="font-size:0.8rem;">${remindCell}</div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;align-items:flex-end;">
+        <button onclick="editNote(${note.id},${JSON.stringify(note.heading)},${JSON.stringify(note.body)},${JSON.stringify(remindAt)})"
+          style="background:var(--orange-pale);border:1px solid var(--border);color:var(--orange-dark);border-radius:6px;padding:0.2rem 0.65rem;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">Edit</button>
+        <button onclick="deleteNote(${note.id},this)"
+          style="background:var(--danger-bg);border:1px solid #fca5a5;color:var(--danger);border-radius:6px;padding:0.2rem 0.65rem;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">Delete</button>
+      </div>`;
+    list.insertBefore(div, list.firstChild);
+    updateCount();
+    showToast('Note added.');
+  }
+}
+
+/* ── Delete ── */
+async function deleteNote(id, btn) {
+  if (!confirm('Delete this note?')) return;
+  let res, data;
+  try {
+    res  = await fetch(`/api/reminder_notes/${id}`, { method: 'DELETE' });
+    data = await res.json();
+  } catch (e) {
+    showToast('Network error: ' + e.message);
+    return;
+  }
+  if (data.status === 'ok') {
+    document.querySelector(`.note-row[data-id="${id}"]`)?.remove();
+    updateCount();
+    if (!document.querySelector('.note-row')) showEmptyState();
+    showToast('Note deleted.');
+  } else {
+    showToast(data.message || 'Could not delete note.');
+  }
+}
+
+/* ── Helpers ── */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Converts "YYYY-MM-DDTHH:MM" → "DD Mon YYYY, HH:MM" for display
+function formatRemindAt(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleString('en-GB', {
+    day:'2-digit', month:'short', year:'numeric',
+    hour:'2-digit', minute:'2-digit', hour12:false
+  });
+}
+
+function updateCount() {
+  const count = document.querySelectorAll('.note-row').length;
+  document.getElementById('note-count').textContent = `${count} note${count !== 1 ? 's' : ''}`;
+}
+
+function removeEmptyState() {
+  document.getElementById('empty-state')?.remove();
+}
+
+function showEmptyState() {
+  document.getElementById('notes-list').innerHTML = `
+    <div id="empty-state" style="text-align:center;padding:2.5rem 1rem;color:var(--text-muted);">
+      <div style="font-size:2rem;margin-bottom:0.5rem;">📝</div>
+      <p style="font-weight:600;margin:0;font-size:0.9rem;">No notes yet.</p>
+      <p style="font-size:0.8rem;margin:0.25rem 0 0;">Add a note to describe the purpose of each reminder.</p>
+    </div>`;
+  document.getElementById('note-count').textContent = '0 notes';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast_msg').textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 3000);
+}
+</script>
+{% endblock %}
