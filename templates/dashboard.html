@@ -1,155 +1,396 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
+{% block page_title %}Good morning, {{ current_user.username }} {% endblock %}
+{% block page_subtitle %}<p>Here's your study overview for today.</p>{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Stat cards row ──────────────────── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+  .sc-yellow { background: #FB923C; color: #fff; }
+  .sc-pink   { background: #EA580C; color: #fff; }
+  .sc-green  { background: #C2410C; color: #fff; }
+  .sc-blue   { background: #9A3412; color: #fff; }
+
+  /* decorative blob */
+  .stat-blob {
+    position: absolute;
+    right: -16px; bottom: -16px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.15);
+  }
+
+  /* ── Main 2-col layout ───────────────── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* ── Session rows ────────────────────── */
+  .session-row {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+    transition: background 0.12s;
+  }
+  .session-row:last-child { border-bottom: none; }
+  .session-row:hover { background: var(--cream); }
+  .session-row.done { opacity: 0.5; }
+
+  .time-block {
+    text-align: center;
+    background: var(--cream);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.3rem;
+  }
+  .time-block .t-start {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .time-block .t-end {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .session-subject { font-weight: 600; font-size: 0.875rem; }
+  .session-meta    { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+  .check-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+    color: transparent;
+    flex-shrink: 0;
+  }
+  .check-btn:hover { border-color: var(--green); color: var(--green); }
+  .check-btn.done  { border-color: var(--green); background: var(--green); color: #fff; }
+
+  /* ── Priority list ───────────────────── */
+  .priority-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+    gap: 0.75rem;
+  }
+  .priority-item:last-child { border-bottom: none; }
+  .priority-rank {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--border);
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .priority-name { font-weight: 600; font-size: 0.875rem; flex: 1; }
+  .priority-exam { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Progress ring ───────────────────── */
+  .progress-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1.25rem 1rem;
+    gap: 0.75rem;
+  }
+  .ring-container { position: relative; width: 130px; height: 130px; }
+  .ring-container svg { transform: rotate(-90deg); }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .ring-pct {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .ring-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* weekly pills */
+  .week-pills {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 0 1rem 1.25rem;
+  }
+  .week-pill {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    min-width: 0;
+  }
+  .week-pill .day-name {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .week-pill .day-dot  {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--cream);
+    font-size: 0.68rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .week-pill .day-dot.today  { background: var(--sidebar-bg); color: #fff; }
+  .week-pill .day-dot.has-sessions { border: 2px solid #EA580C; color: #EA580C; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:1200px;">
-
-  <!-- Page Header -->
-  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-    <div>
-      <h2 style="font-weight:700; font-size:1.6rem; margin:0;">
-        Welcome back, <span style="color:var(--orange);">{{ current_user.username }}</span>
-      </h2>
-      <p style="color:var(--text-muted); font-size:0.875rem; margin:0.2rem 0 0;">
-        {{ today.strftime('%A, %d %B %Y') }}
-      </p>
-    </div>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm">Add Subject</a>
-      <form method="POST" action="{{ url_for('regenerate_plan') }}" style="margin:0;">
-        <button type="submit" class="btn btn-outline-primary btn-sm">Regenerate Plan</button>
-      </form>
-    </div>
+<!-- ── Stat cards ── -->
+<div class="stats-row">
+  <div class="stat-card sc-yellow">
+    <div class="stat-blob"></div>
+    <div class="stat-label">Today's Sessions</div>
+    <div class="stat-value">{{ total_today }}</div>
+    <div class="stat-sub">{{ pending_today }} remaining</div>
   </div>
-
-  <!-- FIX 1: Stats Row — NO icons, clean numbers only -->
-  <div class="row g-3 mb-4">
-    {% for label, val, sid in [
-      ('Total Today',  total_today,               'stat-total'),
-      ('Completed',    completed_today,            'stat-completed'),
-      ('Pending',      pending_today,              'stat-pending'),
-      ('Progress',     progress_pct|string + '%',  'stat-pct')
-    ] %}
-    <div class="col-6 col-md-3">
-      <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:1.5rem 1rem; text-align:center; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;">
-        <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--orange), var(--orange-light));"></div>
-        <div id="{{ sid }}" style="font-size:2.2rem; font-weight:700; color:var(--orange); line-height:1.1;">{{ val }}</div>
-        <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.07em; margin-top:0.4rem;">{{ label }}</div>
-      </div>
-    </div>
-    {% endfor %}
+  <div class="stat-card sc-pink">
+    <div class="stat-blob"></div>
+    <div class="stat-label">Completed</div>
+    <div class="stat-value">{{ completed_today }}</div>
+    <div class="stat-sub">out of {{ total_today }}</div>
   </div>
-
-  <!-- Progress Bar -->
-  <div style="background:var(--white); border:1.5px solid var(--border-light); border-radius:var(--radius); padding:1.25rem; margin-bottom:1.5rem; box-shadow:var(--shadow-sm);">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span style="font-weight:600; font-size:0.9rem;">Today's Progress</span>
-      <span id="progress-label" style="font-weight:700; color:var(--orange); font-size:0.9rem;">{{ progress_pct }}%</span>
-    </div>
-    <div class="progress" style="height:12px;">
-      <div class="progress-bar" id="progress-bar"
-           style="width:{{ progress_pct }}%"
-           aria-valuenow="{{ progress_pct }}"
-           aria-valuemin="0" aria-valuemax="100">
-      </div>
-    </div>
+  <div class="stat-card sc-green">
+    <div class="stat-blob"></div>
+    <div class="stat-label">Progress</div>
+    <div class="stat-value">{{ progress_pct }}%</div>
+    <div class="stat-sub">daily target</div>
   </div>
+  <div class="stat-card sc-blue">
+    <div class="stat-blob"></div>
+    <div class="stat-label">Subjects</div>
+    <div class="stat-value">{{ priority_subjects|length }}</div>
+    <div class="stat-sub">active subjects</div>
+  </div>
+</div>
 
-  <div class="row g-4">
+<!-- ── Main grid ── -->
+<div class="dash-grid">
 
-    <!-- FIX 2: Today's Sessions — consistent row height & spacing -->
-    <div class="col-lg-7">
-      <div class="card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Today's Sessions</span>
-          <span style="font-size:0.78rem; opacity:0.85;">{{ today.strftime('%d %b') }}</span>
+  <!-- Left col: Today's sessions -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <span>Today's Schedule</span>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span class="badge badge-purple">{{ today.strftime('%a, %d %b') }}</span>
+          <form method="POST" action="{{ url_for('regenerate_plan') }}" style="margin:0;">
+            <button type="submit" class="btn btn-sm btn-ghost" title="Regenerate plan">Regenerate</button>
+          </form>
         </div>
-        <div class="card-body" style="padding:1.25rem;">
-          <div id="session-list">
-            {% if sessions %}
-              {% for s in sessions %}
-              <div style="
-                display:grid;
-                grid-template-columns: 110px 1fr auto auto;
-                align-items:center;
-                gap:1rem;
-                padding:0.9rem 1rem;
-                border-radius:8px;
-                border:1.5px solid {% if s.completed %}#B7EFC5{% else %}var(--border-light){% endif %};
-                background:{% if s.completed %}var(--success-bg){% else %}var(--white){% endif %};
-                margin-bottom:0.65rem;
-              ">
-                <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--orange); background:var(--orange-pale); padding:0.25rem 0.5rem; border-radius:5px; text-align:center; white-space:nowrap;">
-                  {{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}
-                </span>
-                <span style="font-weight:600; font-size:0.9rem; {% if s.completed %}text-decoration:line-through; color:var(--text-muted);{% endif %}">
-                  {{ subject_map[s.subject_id].name }}
-                </span>
-                <span class="badge-{{ subject_map[s.subject_id].difficulty|lower }}" style="white-space:nowrap;">
-                  {{ subject_map[s.subject_id].difficulty }}
-                </span>
-                {% if not s.completed %}
-                <form method="POST" action="{{ url_for('complete_session', session_id=s.id) }}" style="margin:0;">
-                  <button type="submit" class="btn btn-success btn-sm complete-btn" data-id="{{ s.id }}" style="font-size:0.78rem; padding:0.25rem 0.75rem; white-space:nowrap;">Done</button>
-                </form>
-                {% else %}
-                <span style="font-size:0.78rem; background:var(--success-bg); color:var(--success); padding:0.25rem 0.65rem; border-radius:6px; font-weight:600; white-space:nowrap;">Done</span>
-                {% endif %}
-              </div>
-              {% endfor %}
+      </div>
+
+      {% if sessions %}
+        {% for session in sessions %}
+        {% set sub = subject_map.get(session.subject_id) %}
+        <div class="session-row {{ 'done' if session.completed }}" id="sr-{{ session.id }}">
+
+          <div class="time-block">
+            <div class="t-start">{{ session.start_time.strftime('%H:%M') }}</div>
+            <div class="t-end">{{ session.end_time.strftime('%H:%M') }}</div>
+          </div>
+
+          <div>
+            <div class="session-subject">{{ sub.name if sub else 'Unknown' }}</div>
+            <div class="session-meta">
+              <span class="diff-dot diff-{{ sub.difficulty if sub else 'Medium' }}"></span>
+              {{ sub.difficulty if sub else '' }}
+              &nbsp;·&nbsp;
+              {% set mins = ((session.end_time.hour * 60 + session.end_time.minute) - (session.start_time.hour * 60 + session.start_time.minute)) %}
+              {{ mins }}m
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            {% if not session.completed %}
+            <button class="check-btn" onclick="markDone({{ session.id }}, this)" title="Mark complete">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+            </button>
             {% else %}
-              <div class="text-center py-4" style="color:var(--text-muted);">
-                <p style="margin:0; font-weight:600;">No sessions scheduled today.</p>
-                <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm mt-2">Add a Subject</a>
-              </div>
+            <button class="check-btn done" disabled>
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+            </button>
             {% endif %}
           </div>
         </div>
-      </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding: 3rem 1rem; color: var(--text-muted);">
+          <div style="font-size:2.5rem; margin-bottom:0.75rem;"></div>
+          <p style="font-weight:600;">No sessions scheduled yet.</p>
+          <p style="font-size:0.82rem; margin-top:0.25rem;">Add subjects to generate your plan.</p>
+          <a href="{{ url_for('add_subject') }}" class="btn btn-primary" style="margin-top:1rem;">+ Add Subject</a>
+        </div>
+      {% endif %}
     </div>
 
-    <!-- Priority Queue -->
-    <div class="col-lg-5">
-      <div class="card h-100">
-        <div class="card-header">Priority Queue</div>
-        <div class="card-body" style="padding:1rem;">
-          <div id="priority-queue">
-            {% if priority_subjects %}
-              {% for sub in priority_subjects[:8] %}
-              <div style="display:flex; align-items:center; gap:0.75rem; padding:0.7rem 0.85rem; border-radius:8px; border-left:4px solid {% if loop.index == 1 %}var(--orange){% elif loop.index == 2 %}var(--orange-light){% else %}#FFB380{% endif %}; background:var(--orange-pale); margin-bottom:0.5rem;">
-                <div style="flex:1;">
-                  <div style="font-weight:600; font-size:0.875rem;">{{ sub.name }}</div>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">Exam: {{ sub.exam_date.strftime('%d %b %Y') }}</div>
-                </div>
-                <span class="badge-{{ sub.difficulty|lower }}">{{ sub.difficulty }}</span>
-                <span style="font-family:var(--font-mono); font-size:0.72rem; background:var(--orange); color:var(--white); padding:0.15rem 0.45rem; border-radius:5px;">{{ '%.3f'|format(sub.priority_score) }}</span>
-              </div>
-              {% endfor %}
-            {% else %}
-              <p style="color:var(--text-muted); text-align:center; padding:2rem 0; font-size:0.9rem;">No subjects added yet.</p>
-            {% endif %}
+    <!-- Subjects table -->
+    {% if priority_subjects %}
+    <div class="card">
+      <div class="card-header">
+        <span>Subjects</span>
+        <a href="{{ url_for('add_subject') }}" class="btn btn-sm btn-accent">+ Add</a>
+      </div>
+      <div style="padding: 0;">
+        <div style="display:grid; grid-template-columns:1fr 110px 80px 80px auto; gap:0.75rem; padding:0.6rem 1.25rem; background:var(--cream); border-bottom:1.5px solid var(--border-light); font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">
+          <span>Subject</span><span>Exam</span><span>Credits</span><span>Difficulty</span><span></span>
+        </div>
+        {% for sub in priority_subjects %}
+        <div style="display:grid; grid-template-columns:1fr 110px 80px 80px auto; gap:0.75rem; padding:0.75rem 1.25rem; border-bottom:1px solid var(--border-light); align-items:center; font-size:0.875rem;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='transparent'">
+          <span style="font-weight:600;">{{ sub.name }}</span>
+          <span style="color:var(--text-muted); font-size:0.8rem;">{{ sub.exam_date.strftime('%d %b %Y') }}</span>
+          <span style="color:var(--text-muted);">{{ sub.credit_hours }}</span>
+          <span>
+            <span class="badge {% if sub.difficulty == 'Hard' %}badge-red{% elif sub.difficulty == 'Medium' %}badge-yellow{% else %}badge-green{% endif %}">
+              {{ sub.difficulty }}
+            </span>
+          </span>
+          <form method="POST" action="{{ url_for('delete_subject', subject_id=sub.id) }}" onsubmit="return confirm('Delete {{ sub.name }}?')">
+            <button type="submit" class="btn btn-sm btn-danger" style="padding:0.2rem 0.5rem;"></button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right col -->
+  <div>
+    <!-- Progress ring card -->
+    <div class="card mb-3">
+      <div class="card-header"><span>Daily Progress</span></div>
+      <div class="progress-ring-wrap">
+        <div class="ring-container">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle cx="65" cy="65" r="54" fill="none" stroke="var(--border-light)" stroke-width="10"/>
+            <circle cx="65" cy="65" r="54" fill="none" stroke="#EA580C" stroke-width="10"
+              stroke-dasharray="{{ (progress_pct / 100 * 339.3)|round(1) }} 339.3"
+              stroke-linecap="round"/>
+          </svg>
+          <div class="ring-center">
+            <span class="ring-pct">{{ progress_pct }}%</span>
+            <span class="ring-label">done</span>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:0.8rem; color:var(--text-muted);">
+            <strong style="color:var(--text);">{{ completed_today }}</strong> of <strong style="color:var(--text);">{{ total_today }}</strong> sessions completed
           </div>
         </div>
       </div>
-    </div>
 
-  </div>
-
-  <!-- Weekly Timetable -->
-  <div class="card mt-4">
-    <div class="card-header">7-Day Study Plan</div>
-    <div class="card-body" style="padding:1rem;">
-      <div id="weekly-plan">
-        <div class="text-center py-3" style="color:var(--text-muted);">
-          <span class="spinner"></span> Loading weekly plan...
-        </div>
+      <!-- Week mini calendar -->
+      <div class="week-pills" id="week-pills">
+        <!-- Populated by JS -->
       </div>
     </div>
+
+    <!-- Priority queue -->
+    {% if priority_subjects %}
+    <div class="card">
+      <div class="card-header"><span>Priority Queue</span></div>
+      {% for sub in priority_subjects[:5] %}
+      <div class="priority-item">
+        <div style="flex:1;">
+          <div class="priority-name">{{ sub.name }}</div>
+          <div class="priority-exam">Exam {{ sub.exam_date.strftime('%d %b') }}</div>
+        </div>
+        <span class="badge {% if sub.difficulty == 'Hard' %}badge-red{% elif sub.difficulty == 'Medium' %}badge-yellow{% else %}badge-green{% endif %}">
+          {{ sub.difficulty }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% block scripts %}
+<script>
+/* ── Mark session done ── */
+async function markDone(id, btn) {
+  try {
+    await fetch(`/complete_session/${id}`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    btn.classList.add('done');
+    btn.disabled = true;
+    const row = document.getElementById(`sr-${id}`);
+    if (row) row.classList.add('done');
+    showToast('Session marked complete ');
+    setTimeout(() => refreshStats(), 400);
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+/* ── Refresh stat cards ── */
+async function refreshStats() {
+  try {
+    const d = await fetch('/api/dashboard_stats').then(r => r.json());
+    document.querySelector('.sc-yellow .stat-value').textContent = d.total;
+    document.querySelector('.sc-yellow .stat-sub').textContent   = d.pending + ' remaining';
+    document.querySelector('.sc-pink .stat-value').textContent   = d.completed;
+    document.querySelector('.sc-pink .stat-sub').textContent     = 'out of ' + d.total;
+    document.querySelector('.sc-green .stat-value').textContent  = d.progress_pct + '%';
+    // Update ring
+    const pct = d.progress_pct;
+    const circ = document.querySelector('circle[stroke="#EA580C"]');
+    if (circ) circ.setAttribute('stroke-dasharray', (pct/100*339.3).toFixed(1) + ' 339.3');
+    document.querySelector('.ring-pct').textContent = pct + '%';
+  } catch(e) {}
+}
+
+/* ── Week pills ── */
+async function buildWeekPills() {
+  const wrap = document.getElementById('week-pills');
+  if (!wrap) return;
+  const days = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  let data = {};
+  try { data = (await fetch('/api/weekly_plan').then(r => r.json())).days || {}; } catch(e){}
+
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const key   = d.toISOString().slice(0,10);
+    const isToday = i === 0;
+    const hasSessions = (data[key] || []).length > 0;
+    const pill = document.createElement('div');
+    pill.className = 'week-pill';
+    let cls = isToday ? 'today' : (hasSessions ? 'has-sessions' : '');
+    pill.innerHTML = `
+      <span class="day-name">${days[d.getDay() === 0 ? 6 : d.getDay()-1]}</span>
+      <span class="day-dot ${cls}">${d.getDate()}</span>`;
+    wrap.appendChild(pill);
+  }
+}
+buildWeekPills();
+</script>
 {% endblock %}

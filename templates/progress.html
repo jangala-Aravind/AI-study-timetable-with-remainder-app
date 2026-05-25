@@ -1,39 +1,38 @@
 {% extends "base.html" %}
 {% block title %}Progress{% endblock %}
+{% block page_title %}Progress{% endblock %}
+{% block page_subtitle %}<p>Track your completion rate per subject.</p>{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:800px;">
- <div class="mb-4">
- <a href="{{ url_for('dashboard') }}" style="color:var(--text-muted); font-size:0.875rem; text-decoration:none;">← Back to Dashboard</a>
- <h2 style="font-weight:700; margin:0.5rem 0 0.25rem;"> Your Progress</h2>
- <p style="color:var(--text-muted); font-size:0.875rem; margin:0;">Completion rate per subject.</p>
- </div>
-
- {% if stats %}
- <div class="card">
- <div class="card-header">Subject Completion Rates</div>
- <div class="card-body" style="padding:1.25rem;">
- {% for item in stats %}
- <div class="mb-4">
- <div class="d-flex justify-content-between align-items-center mb-1">
- <span style="font-weight:600; font-size:0.9rem;">{{ item.name }}</span>
- <span style="font-weight:700; color:{% if item.rate >= 75 %}var(--success){% elif item.rate >= 40 %}var(--warning){% else %}var(--orange){% endif %}; font-size:0.9rem;">
- {{ item.rate }}%
- </span>
- </div>
- <div class="progress" style="height:10px;">
- <div class="progress-bar" style="width:{{ item.rate }}%; background:{% if item.rate >= 75 %}var(--success){% elif item.rate >= 40 %}#E6A817{% else %}var(--orange){% endif %};"></div>
- </div>
- </div>
- {% endfor %}
- </div>
- </div>
- {% else %}
- <div style="text-align:center; padding:4rem 0; color:var(--text-muted);">
- <div style="font-size:3rem; margin-bottom:1rem;"></div>
- <p style="font-weight:600; margin:0;">No progress data yet.</p>
- <a href="{{ url_for('add_subject') }}" class="btn btn-primary btn-sm mt-3">Add a Subject</a>
- </div>
- {% endif %}
+<div style="max-width: 680px;">
+  {% if stats %}
+  <div class="card">
+    <div class="card-header">Completion Rate by Subject</div>
+    <div style="padding: 0;">
+      {% for s in stats %}
+      <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-light);" {% if loop.last %}style="border-bottom:none;padding:1rem 1.25rem;"{% endif %}>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <span style="font-weight:600; font-size:0.875rem;">{{ s.name }}</span>
+          <span style="font-family:'Inter',sans-serif; font-weight:700; font-size:0.9rem;
+            color: {% if s.rate >= 75 %}var(--green){% elif s.rate >= 40 %}var(--yellow){% else %}var(--red){% endif %};">
+            {{ s.rate }}%
+          </span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:{{ s.rate }}%;
+            background: {% if s.rate >= 75 %}var(--green){% elif s.rate >= 40 %}var(--yellow){% else %}var(--red){% endif %};"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div style="text-align:center; padding:3rem; color:var(--text-muted); background:var(--white); border-radius:var(--radius); border:1.5px dashed var(--border);">
+    <div style="font-size:2.5rem; margin-bottom:0.75rem;"></div>
+    <p style="font-weight:600;">No data yet</p>
+    <p style="font-size:0.82rem; margin-top:0.25rem;">Complete sessions to see your progress.</p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="margin-top:1rem;">Go to Dashboard</a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

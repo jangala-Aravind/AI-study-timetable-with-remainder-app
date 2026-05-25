@@ -1,98 +1,79 @@
 {% extends "base.html" %}
-{% block title %}Setup Your Plan{% endblock %}
+{% block title %}Onboarding{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:700px;">
- <div style="text-align:center; margin-bottom:2.5rem;">
- <div style="font-size:3rem; margin-bottom:0.5rem;"></div>
- <h2 style="font-weight:700; color:var(--text);">Set Up Your Study Plan</h2>
- <p style="color:var(--text-muted); max-width:460px; margin:0.5rem auto 0;">Tell us your subjects and exam dates. Our AI will build your perfect timetable instantly.</p>
- </div>
+<div style="min-height:80vh; display:flex; align-items:flex-start; justify-content:center; padding-top:2rem;">
+  <div style="width:100%; max-width:620px;">
 
- <div class="card">
- <div class="card-header"> Your Subjects & Schedule</div>
- <div class="card-body" style="padding:1.5rem;">
- <form method="POST" action="{{ url_for('onboarding') }}">
+    <div style="margin-bottom:2rem;">
+      <h1 style="font-family:'Inter',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-0.02em;">Let's set up your plan </h1>
+      <p style="color:var(--text-muted);margin-top:0.4rem;">Add your subjects and we'll generate a smart AI timetable for you.</p>
+    </div>
 
- <div class="mb-4 p-3" style="background:var(--orange-pale); border-radius:var(--radius-sm); border:1px solid var(--border);">
- <label class="form-label">⏱ Daily Study Hours</label>
- <input type="number" name="daily_hours" class="form-control" placeholder="e.g. 4" min="0.5" max="16" step="0.5" required>
- <small style="color:var(--text-muted); font-size:0.8rem;">How many hours can you study per day?</small>
- </div>
+    <form method="POST" action="{{ url_for('onboarding') }}">
 
- <div id="subjects-container">
- <div class="subject-row mb-3 p-3" style="border:1.5px solid var(--border-light); border-radius:var(--radius-sm); background:var(--white);">
- <div class="row g-2">
- <div class="col-md-6">
- <label class="form-label">Subject Name</label>
- <input type="text" name="subject_name[]" class="form-control" placeholder="e.g. Mathematics" required>
- </div>
- <div class="col-md-6">
- <label class="form-label">Exam Date</label>
- <input type="date" name="exam_date[]" class="form-control" required>
- </div>
- <div class="col-md-6">
- <label class="form-label">Credit Hours</label>
- <input type="number" name="credit_hours[]" class="form-control" placeholder="e.g. 3" min="1" max="10" step="0.5" required>
- </div>
- <div class="col-md-6">
- <label class="form-label">Difficulty</label>
- <select name="difficulty[]" class="form-select" required>
- <option value="" disabled selected>Select…</option>
- <option value="Hard"> Hard</option>
- <option value="Medium"> Medium</option>
- <option value="Weak"> Weak / Easy</option>
- </select>
- </div>
- </div>
- </div>
- </div>
+      <div class="card mb-3">
+        <div class="card-header">Daily Study Hours</div>
+        <div class="card-body">
+          <label class="form-label">How many hours can you study per day?</label>
+          <input type="number" name="daily_hours" class="form-control" style="max-width:160px;" min="0.5" max="16" step="0.5" value="4" required>
+        </div>
+      </div>
 
- <button type="button" onclick="addSubjectRow()" class="btn btn-outline-primary btn-sm mb-4">
- Add Another Subject
- </button>
+      <div class="card mb-4">
+        <div class="card-header">
+          Subjects
+          <button type="button" onclick="addRow()" class="btn btn-sm btn-accent">+ Add Row</button>
+        </div>
+        <div style="padding:0;">
+          <div style="display:grid;grid-template-columns:1fr 130px 80px 110px 36px;gap:0.5rem;padding:0.6rem 1.25rem;background:var(--cream);border-bottom:1.5px solid var(--border-light);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);">
+            <span>Subject</span><span>Exam Date</span><span>Credits</span><span>Difficulty</span><span></span>
+          </div>
+          <div id="subject-rows">
+            <!-- Initial row -->
+            <div class="subj-row" style="display:grid;grid-template-columns:1fr 130px 80px 110px 36px;gap:0.5rem;padding:0.6rem 1.25rem;border-bottom:1px solid var(--border-light);align-items:center;">
+              <input type="text" name="subject_name[]" class="form-control" placeholder="Subject name" required>
+              <input type="date" name="exam_date[]" class="form-control" required>
+              <input type="number" name="credit_hours[]" class="form-control" step="0.5" min="0.5" placeholder="3" required>
+              <select name="difficulty[]" class="form-select">
+                <option value="Hard">Hard</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Weak">Weak</option>
+              </select>
+              <button type="button" onclick="removeRow(this)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:0;" title="Remove"></button>
+            </div>
+          </div>
+        </div>
+      </div>
 
- <button type="submit" class="btn btn-primary w-100" style="padding:0.75rem; font-size:1rem;">
- Generate My AI Timetable
- </button>
- </form>
- </div>
- </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem;">Generate My Timetable </button>
+    </form>
+  </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function addSubjectRow() {
- const container = document.getElementById('subjects-container');
- const row = document.createElement('div');
- row.className = 'subject-row mb-3 p-3';
- row.style.cssText = 'border:1.5px solid var(--border-light); border-radius:var(--radius-sm); background:var(--white); position:relative;';
- row.innerHTML = `
- <button type="button" onclick="this.parentElement.remove()"
- style="position:absolute; top:0.5rem; right:0.5rem; background:var(--danger-bg); color:var(--danger); border:none; border-radius:6px; padding:0.15rem 0.5rem; font-size:0.8rem; cursor:pointer;"></button>
- <div class="row g-2">
- <div class="col-md-6">
- <label class="form-label">Subject Name</label>
- <input type="text" name="subject_name[]" class="form-control" placeholder="e.g. Physics">
- </div>
- <div class="col-md-6">
- <label class="form-label">Exam Date</label>
- <input type="date" name="exam_date[]" class="form-control">
- </div>
- <div class="col-md-6">
- <label class="form-label">Credit Hours</label>
- <input type="number" name="credit_hours[]" class="form-control" placeholder="e.g. 3" min="1" max="10" step="0.5">
- </div>
- <div class="col-md-6">
- <label class="form-label">Difficulty</label>
- <select name="difficulty[]" class="form-select">
- <option value="" disabled selected>Select…</option>
- <option value="Hard"> Hard</option>
- <option value="Medium"> Medium</option>
- <option value="Weak"> Weak / Easy</option>
- </select>
- </div>
- </div>`;
- container.appendChild(row);
+function addRow() {
+  const container = document.getElementById('subject-rows');
+  const div = document.createElement('div');
+  div.className = 'subj-row';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 130px 80px 110px 36px;gap:0.5rem;padding:0.6rem 1.25rem;border-bottom:1px solid var(--border-light);align-items:center;';
+  div.innerHTML = `
+    <input type="text" name="subject_name[]" class="form-control" placeholder="Subject name" required>
+    <input type="date" name="exam_date[]" class="form-control" required>
+    <input type="number" name="credit_hours[]" class="form-control" step="0.5" min="0.5" placeholder="3" required>
+    <select name="difficulty[]" class="form-select">
+      <option value="Hard">Hard</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="Weak">Weak</option>
+    </select>
+    <button type="button" onclick="removeRow(this)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:0;"></button>`;
+  container.appendChild(div);
+}
+function removeRow(btn) {
+  const rows = document.querySelectorAll('.subj-row');
+  if (rows.length > 1) btn.closest('.subj-row').remove();
 }
 </script>
 {% endblock %}

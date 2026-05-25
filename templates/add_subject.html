@@ -1,53 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Add Subject{% endblock %}
+{% block page_title %}Add Subject{% endblock %}
+{% block page_subtitle %}<p>Add a new subject to your study plan.</p>{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:600px;">
- <div class="mb-4">
- <a href="{{ url_for('dashboard') }}" style="color:var(--text-muted); font-size:0.875rem; text-decoration:none;">← Back to Dashboard</a>
- <h2 style="font-weight:700; margin:0.5rem 0 0.25rem;"> Add New Subject</h2>
- <p style="color:var(--text-muted); font-size:0.875rem; margin:0;">The AI will instantly reschedule your timetable.</p>
- </div>
+<div style="max-width: 520px;">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm mb-3"> Back to Dashboard</a>
 
- <div class="card">
- <div class="card-header">Subject Details</div>
- <div class="card-body" style="padding:1.5rem;">
- <form method="POST" action="{{ url_for('add_subject') }}" id="add-subject-form">
-
- <div class="mb-3">
- <label class="form-label">Subject Name</label>
- <input type="text" name="subject_name" class="form-control" placeholder="e.g. Mathematics, Physics…" required>
- </div>
-
- <div class="mb-3">
- <label class="form-label">Exam Date</label>
- <input type="date" name="exam_date" class="form-control" required>
- </div>
-
- <div class="mb-3">
- <label class="form-label">Credit Hours</label>
- <input type="number" name="credit_hours" class="form-control" placeholder="e.g. 3" min="1" max="10" step="0.5" required>
- </div>
-
- <div class="mb-4">
- <label class="form-label">Difficulty Level</label>
- <select name="difficulty" class="form-select" required>
- <option value="" disabled selected>Select difficulty…</option>
- <option value="Hard"> Hard</option>
- <option value="Medium"> Medium</option>
- <option value="Weak"> Weak / Easy</option>
- </select>
- </div>
-
- <button type="submit" class="btn btn-primary w-100" style="padding:0.7rem; font-size:1rem;">
- Add Subject & Update Plan
- </button>
- </form>
- </div>
- </div>
+  <div class="card">
+    <div class="card-header">Subject Details</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('add_subject') }}">
+        <div class="mb-3">
+          <label class="form-label">Subject Name</label>
+          <input type="text" name="subject_name" class="form-control" placeholder="e.g. Mathematics, Physics…" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Exam Date</label>
+          <input type="date" name="exam_date" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Credit Hours</label>
+          <input type="number" name="credit_hours" class="form-control" step="0.5" min="0.5" placeholder="e.g. 3" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Difficulty</label>
+          <select name="difficulty" class="form-select">
+            <option value="Hard">Hard</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Weak">Weak</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <button type="submit" class="btn btn-primary">Add Subject</button>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 {% endblock %}
